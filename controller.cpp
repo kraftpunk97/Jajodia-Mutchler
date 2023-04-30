@@ -22,6 +22,7 @@ int main() {
     {"10.176.69.36", 8085},
     {"10.176.69.37", 8086},
     {"10.176.69.38", 8087},
+    {"10.176.69.39", 8088},
 };
 
     // Create sockets and connect to servers
@@ -40,25 +41,50 @@ int main() {
         server_addr.sin_port = htons(servers[i].port);
         if (inet_pton(AF_INET, servers[i].ip, &server_addr.sin_addr) <= 0) {
             std::cerr << "Error converting server address for server " << (char)('A'+i) << std::endl;
-            close(server_sockets[i]);
             continue;
         }
         if (connect(server_sockets[i], (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
             std::cerr << "Error connecting to server " << (char)('A'+i) << std::endl;
+            continue;
+        }
+
+        // Send "PHASE1" message to server
+        int phase1_start = 1;
+        if (send(server_sockets[i], &phase1_start, sizeof(int), 0) < 0) {
+            std::cerr << "Error sending PHASE1 message to server " << (char)('A'+i) << std::endl;
             close(server_sockets[i]);
             continue;
         }
 
-        // Send "START" message to server
-        const char* start_msg = "START";
-        if (send(server_sockets[i], start_msg, strlen(start_msg), 0) < 0) {
-            std::cerr << "Error sending START message to server " << (char)('A'+i) << std::endl;
-            close(server_sockets[i]);
-            continue;
-        }
+        std::cout << "Sent PHASE1 message to server " << (char)('A'+i) << std::endl;
 
-        std::cout << "Sent START message to server " << (char)('A'+i) << std::endl;
     }
+
+    //SEND UPDATE
+    int update_buf = 2;
+    //Send update on X to Server A and B
+    if ((send(server_sockets[0], &update_buf, sizeof(int), 0) < 0 ) || 
+        ((send(server_sockets[1], &update_buf, sizeof(int), 0) < 0 ))) {
+            std::cerr << "Error sending update message to server " << (char)('A') << std::endl;
+    }
+    else
+    std::cout<< "Sent an update on X to server A and B"<< std::endl;
+
+    //RECEIVE END OF PHASE 1
+    int phase1_end_count;
+    int phase1_end;
+    for (int i = 0; i < NUM_SERVERS; i++) {
+        if (recv(server_sockets[i], &phase1_end, sizeof(int), 0) < 0) {
+            std::cerr << "Error receiving phase 1 end from server " << (char)('A'+i) << std::endl;
+            continue;
+        }
+        else {
+            std::cout<< "Received end of Phase 1 msg from server "<< (char)('A'+i) << std::endl;
+            phase1_end_count++;
+        }
+    }    
+    if(phase1_end_count == NUM_SERVERS)
+        std::cout<< "Received end of Phase 1 msg from all servers"<< std::endl;
 
     // Close sockets
     for (int i = 0; i < NUM_SERVERS; i++) {
