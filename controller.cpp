@@ -28,8 +28,6 @@ int main() {
     {"10.176.69.38", 8087},
     {"10.176.69.39", 8088},
 };
-
-
     // Create sockets and connect to servers
     int server_sockets[NUM_SERVERS];
     for (int i = 0; i < NUM_SERVERS; i++) {
@@ -79,8 +77,8 @@ int main() {
     std::cout<< "Sent an update on X to server A"<< std::endl;
 
     //Receive "Response" from Server A
-    int response_buf_A;
-    if (recv(server_sockets[0], &response_buf_A, sizeof(int), 0) < 0) {
+    int response_buf;
+    if (recv(server_sockets[0], &response_buf, sizeof(int), 0) < 0) {
             std::cerr << "Error receiving response from server A " << std::endl;
     }
     else 
@@ -100,8 +98,7 @@ int main() {
     std::cout<< "Sent an update on X to server B"<< std::endl;
 
     //Receive "response" from Server B
-    int response_buf_B;
-    if (recv(server_sockets[1], &response_buf_B, sizeof(int), 0) < 0) {
+    if (recv(server_sockets[1], &response_buf, sizeof(int), 0) < 0) {
             std::cerr << "Error receiving response from server B " << std::endl;
     }
     else 
@@ -132,8 +129,7 @@ int main() {
     std::cout<< "Sent an update on X to server A"<< std::endl;
 
     //Receive "Response" from Server A
-    int response_buf_A;
-    if (recv(server_sockets[0], &response_buf_A, sizeof(int), 0) < 0) {
+    if (recv(server_sockets[0], &response_buf, sizeof(int), 0) < 0) {
             std::cerr << "Error receiving response from server A " << std::endl;
     }
     else 
@@ -153,8 +149,7 @@ int main() {
     std::cout<< "Sent an update on X to server B"<< std::endl;
 
     //Receive "response" from Server B
-    int response_buf_B;
-    if (recv(server_sockets[1], &response_buf_B, sizeof(int), 0) < 0) {
+    if (recv(server_sockets[1], &response_buf, sizeof(int), 0) < 0) {
             std::cerr << "Error receiving response from server B " << std::endl;
     }
     else 
@@ -174,8 +169,7 @@ int main() {
     std::cout<< "Sent an update on X to server E"<< std::endl;
 
     //Receive "Response" from Server E
-    int response_buf_E;
-    if (recv(server_sockets[4], &response_buf_E, sizeof(int), 0) < 0) {
+    if (recv(server_sockets[4], &response_buf, sizeof(int), 0) < 0) {
             std::cerr << "Error receiving response from server E " << std::endl;
     }
     else 
@@ -195,8 +189,7 @@ int main() {
     std::cout<< "Sent an update on X to server F"<< std::endl;
 
     //Receive "response" from Server F
-    int response_buf_F;
-    if (recv(server_sockets[5], &response_buf_F, sizeof(int), 0) < 0) {
+    if (recv(server_sockets[5], &response_buf, sizeof(int), 0) < 0) {
             std::cerr << "Error receiving response from server F " << std::endl;
     }
     else 
@@ -227,8 +220,7 @@ int main() {
     std::cout<< "Sent an update on X to server A"<< std::endl;
 
     //Receive "Response" from Server A
-    int response_buf_A;
-    if (recv(server_sockets[0], &response_buf_A, sizeof(int), 0) < 0) {
+    if (recv(server_sockets[0], &response_buf, sizeof(int), 0) < 0) {
             std::cerr << "Error receiving response from server A " << std::endl;
     }
     else 
@@ -248,8 +240,7 @@ int main() {
     std::cout<< "Sent an update on X to server B"<< std::endl;
 
     //Receive "response" from Server B
-    int response_buf_B;
-    if (recv(server_sockets[1], &response_buf_B, sizeof(int), 0) < 0) {
+    if (recv(server_sockets[1], &response_buf, sizeof(int), 0) < 0) {
             std::cerr << "Error receiving response from server B " << std::endl;
     }
     else 
@@ -269,8 +260,7 @@ int main() {
     std::cout<< "Sent an update on X to server D"<< std::endl;
 
     //Receive "response" from Server D
-    int response_buf_D;
-    if (recv(server_sockets[3], &response_buf_D, sizeof(int), 0) < 0) {
+    if (recv(server_sockets[3], &response_buf, sizeof(int), 0) < 0) {
             std::cerr << "Error receiving response from server D " << std::endl;
     }
     else 
@@ -290,8 +280,7 @@ int main() {
     std::cout<< "Sent an update on X to server E"<< std::endl;
 
     //Receive "Response" from Server E
-    int response_buf_E;
-    if (recv(server_sockets[4], &response_buf_E, sizeof(int), 0) < 0) {
+    if (recv(server_sockets[4], &response_buf, sizeof(int), 0) < 0) {
             std::cerr << "Error receiving response from server E " << std::endl;
     }
     else 
@@ -311,8 +300,7 @@ int main() {
     std::cout<< "Sent an update on X to server F"<< std::endl;
 
     //Receive "response" from Server F
-    int response_buf_F;
-    if (recv(server_sockets[5], &response_buf_F, sizeof(int), 0) < 0) {
+    if (recv(server_sockets[5], &response_buf, sizeof(int), 0) < 0) {
             std::cerr << "Error receiving response from server F " << std::endl;
     }
     else 
@@ -332,8 +320,7 @@ int main() {
     std::cout<< "Sent an update on X to server H"<< std::endl;
 
     //Receive "response" from Server H
-    int response_buf_H;
-    if (recv(server_sockets[7], &response_buf_H, sizeof(int), 0) < 0) {
+    if (recv(server_sockets[7], &response_buf, sizeof(int), 0) < 0) {
             std::cerr << "Error receiving response from server H " << std::endl;
     }
     else 
@@ -374,8 +361,7 @@ int main() {
     std::cout<< "Sent an update on X to server B"<< std::endl;
 
     //Receive "response" from Server B
-    int response_buf_B;
-    if (recv(server_sockets[1], &response_buf_B, sizeof(int), 0) < 0) {
+    if (recv(server_sockets[1], &response_buf, sizeof(int), 0) < 0) {
             std::cerr << "Error receiving response from server B " << std::endl;
     }
     else 
@@ -395,8 +381,7 @@ int main() {
     std::cout<< "Sent an update on X to server D"<< std::endl;
 
     //Receive "response" from Server D
-    int response_buf_D;
-    if (recv(server_sockets[3], &response_buf_D, sizeof(int), 0) < 0) {
+    if (recv(server_sockets[3], &response_buf, sizeof(int), 0) < 0) {
             std::cerr << "Error receiving response from server D " << std::endl;
     }
     else 
@@ -404,8 +389,8 @@ int main() {
 /*************************************************************/
 
     // Close sockets
-    for (auto server_socket: server_sockets) {
-        close(server_socket);
+    for (int i = 0; i < NUM_SERVERS; i++) {
+        close(server_sockets[i]);
     }
 
     return 0;
