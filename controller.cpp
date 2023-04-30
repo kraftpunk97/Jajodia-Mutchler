@@ -12,6 +12,7 @@ typedef struct {
     int port;
 } server_info;
 
+enum server_name {A, B, C, D, E, F, G, H};
 int main() {
     // Array of server information
     server_info servers[NUM_SERVERS] = {
@@ -24,6 +25,7 @@ int main() {
     {"10.176.69.38", 8087},
 };
 
+
     // Create sockets and connect to servers
     int server_sockets[NUM_SERVERS];
     for (int i = 0; i < NUM_SERVERS; i++) {
@@ -35,7 +37,7 @@ int main() {
         }
 
         // Connect to server
-        struct sockaddr_in server_addr;
+        sockaddr_in server_addr;
         server_addr.sin_family = AF_INET;
         server_addr.sin_port = htons(servers[i].port);
         if (inet_pton(AF_INET, servers[i].ip, &server_addr.sin_addr) <= 0) {
@@ -61,8 +63,8 @@ int main() {
     }
 
     // Close sockets
-    for (int i = 0; i < NUM_SERVERS; i++) {
-        close(server_sockets[i]);
+    for (auto server_socket: server_sockets) {
+        close(server_socket);
     }
 
     return 0;
