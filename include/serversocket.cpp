@@ -1,16 +1,17 @@
 #include "serversocket.hpp"
 #include <iostream>
+#include <errno.h>
 
 ServerSocket::ServerSocket(int port) {
     /*If we can not create a socket, bind it to a port or listen to incoming connections, throw an error. */
     if (!Socket::create())
-        throw SocketException("Cannot create the server socket");
+        perror("Create");
     
     if (!Socket::bind(port))
-        throw SocketException("Cannot bind the server to port " + std::to_string(port));
-    
+        perror("bind");
+
     if (!Socket::listen())
-        throw SocketException("Error listening for incoming connection requests at port " + std::to_string(port));
+        perror("listen");
 }
 
 ServerSocket::ServerSocket() {}
