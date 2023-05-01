@@ -1,5 +1,6 @@
 #include "clientsocket.hpp"
 #include <iostream>
+#include <cerrno>
 
 ClientSocket::ClientSocket() {
     /*If we can not create a socket, bind it to a port or listen to incoming connections, throw an error. */
@@ -35,9 +36,11 @@ void ClientSocket::send(const void* buffer, size_t len) {
 }
 
 void ClientSocket::connect(const std::string host, const int port) {
-    if (!Socket::connect(host, port))
-        throw SocketException("Can not connect to the server at " + host + 
+    if (!Socket::connect(host, port)) {
+        std::perror("Connect");
+        throw SocketException("Can not connect to the server at " + host +
                               " port " + std::to_string(port));
+    }
 }
 
 

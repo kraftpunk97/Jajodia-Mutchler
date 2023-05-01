@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <regex>
+#include <unistd.h>
 
 // Hard-coding the phase partition, because I'm *this* close to losing it.
 std::vector<std::string> phases {
@@ -53,6 +54,7 @@ public:
     }
 
     void phase() {
+        std::cout << "Received \"PHASE\" message from the controller.\n";
         std::string current_phase = *phase_itr;
         std::regex pattern("\\d+");
         std::sregex_iterator it(current_phase.begin(), current_phase.end(), pattern);
@@ -77,6 +79,7 @@ public:
             // Am I in this partition?
             auto designation = std::to_string(m_designation);
             if (partition.find(designation) != std::string::npos) {
+                std::cout << "Found the partition\n";
                 // Who are my neighbors?
                 for (int peer: partition) {
                     peer -= '0';
@@ -84,25 +87,39 @@ public:
                         m_peers.push_back(peer);
                     }
                 }
+                std::cout << "My peers are:";
+                for (int peer: m_peers)
+                    std::cout << " " << peer;
+                std::cout << std::endl;
                 // Meeting the neighbors...
                 // Two parts that have to be done simultaneously...
+                // 2. Listening for connections from other servers
+                auto connFromUtil = [=]() {
+                    for (int i = 0; i < m_peers.size(); i++) {
+                        ServerSocket new_socket;
+                        m_serverSocket.accept(new_socket);
+                        std::cout << "Found a connection...\n";
+                        m_peerFromSockets[i] = new_socket;
+                    }
+                };
+                std::thread connFromThread = std::thread(connFromUtil);
+
+                sleep(1);
                 // 1. Connect to other servers
                 auto connToUtil = [=]() {
                     for (int peer: m_peers) {
+                        m_peerToSockets[peer] = ClientSocket();
                         std::string ip = servers[peer].ip;
                         int port = servers[peer].port;
+                        std::cout << "IP: " << ip << "\tPort: " << port << std::endl;
                         m_peerToSockets[peer].connect(ip, port);
+                        std::cout << "Connected to the server\n";
                     }
                 };
                 std::thread connToThread = std::thread(connToUtil);
 
-                // 2. Listening for connections from other servers
-                for (int i=0; i<m_peers.size(); i++) {
-                    ServerSocket new_socket;
-                    m_serverSocket.accept(new_socket);
-                    m_peerFromSockets[i] = new_socket;
-                }
                 connToThread.join();
+                connFromThread.join();
                 break;
             }
             it++;

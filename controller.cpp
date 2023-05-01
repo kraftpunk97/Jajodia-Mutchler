@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <errno.h>
 
 enum server_name {A, B, C, D, E, F, G, H};
 int main() {
@@ -22,11 +23,12 @@ int main() {
         server_addr.sin_family = AF_INET;
         server_addr.sin_port = htons(servers[i].port);
         if (inet_pton(AF_INET, servers[i].ip.c_str(), &server_addr.sin_addr) <= 0) {
-            std::cerr << "Error converting server address for server " << (char)('A'+i) << std::endl;
+            std::cerr << "Error converting server address for server " << i << std::endl;
             continue;
         }
         if (connect(server_sockets[i], (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-            std::cerr << "Error connecting to server " << (char)('A'+i) << std::endl;
+            //std::cerr << "Error connecting to server " << i << std::endl;
+            perror("connect: ");
             continue;
         }
 

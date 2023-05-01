@@ -1,17 +1,23 @@
 #include "serversocket.hpp"
 #include <iostream>
-#include <errno.h>
+#include <cerrno>
 
 ServerSocket::ServerSocket(int port) {
     /*If we can not create a socket, bind it to a port or listen to incoming connections, throw an error. */
-    if (!Socket::create())
-        perror("Create");
+    if (!Socket::create()) {
+        std::perror("Create");
+        throw SocketException("Cannot create the server socket");
+    }
     
-    if (!Socket::bind(port))
-        perror("bind");
+    if (!Socket::bind(port)) {
+        std::perror("Bind");
+        throw SocketException("Cannot bind the server to port " + std::to_string(port));
+    }
 
-    if (!Socket::listen())
-        perror("listen");
+    if (!Socket::listen()) {
+        std::perror("Listen");
+        throw SocketException("Error listening for incoming connection requests at port " + std::to_string(port));
+    }
 }
 
 ServerSocket::ServerSocket() {}
@@ -48,8 +54,10 @@ void ServerSocket::send(const void* buffer, size_t len) {
 
 void ServerSocket::accept(ServerSocket& new_socket) const {
     /* If we cannot accept this exception, throw an error*/
-    if(!Socket::accept(new_socket))
+    if(!Socket::accept(new_socket)) {
+        std::perror("Accept");
         throw SocketException("Cannot accept the incoming connection.");
+    }
 }
 
 void ServerSocket::close() {
