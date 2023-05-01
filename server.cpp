@@ -1,5 +1,6 @@
 #include "include/serversocket.hpp"
 #include "include/clientsocket.hpp"
+#include "include/socketexception.hpp"
 #include "commons.h"
 #include <iostream>
 #include <thread>
@@ -72,7 +73,7 @@ public:
             }
         }
 
-        // ...And form new ties.
+        // ...And form new bonds. (very poetic)
         while (it != end) {
             std::string partition = it->str();
 
@@ -91,9 +92,11 @@ public:
                 for (int peer: m_peers)
                     std::cout << " " << peer;
                 std::cout << std::endl;
-                // Meeting the neighbors...
+
+
+                // Hi-Diddly-Ho, Neighborino!
                 // Two parts that have to be done simultaneously...
-                // 2. Listening for connections from other servers
+                // 1. Listen for connections from other servers
                 auto connFromUtil = [=]() {
                     for (int i = 0; i < m_peers.size(); i++) {
                         ServerSocket new_socket;
@@ -105,7 +108,7 @@ public:
                 std::thread connFromThread = std::thread(connFromUtil);
 
                 sleep(1);
-                // 1. Connect to other servers
+                // 2. Connect to other servers
                 auto connToUtil = [=]() {
                     for (int peer: m_peers) {
                         m_peerToSockets[peer] = ClientSocket();
@@ -126,6 +129,40 @@ public:
         }
         phase_itr++;
 
+        sleep(1);
+        // Inform the controller that the partitioning is complete.
+        int* success_msg_buffer = new int;
+        *success_msg_buffer = 1;
+        m_controllerSocket.send(success_msg_buffer, sizeof(int));
+        std::cout << "Sent the partitioning confirmation to the controller.\n";
+    }
+
+    void close() {
+        /*
+         * Because we're fucking decent human beings...
+         * */
+        sleep(1);
+        for (ServerSocket peer_socket: m_peerFromSockets) {
+            if (peer_socket.is_valid()) {
+                try {
+                    peer_socket.close();
+                } catch (SocketException& e) {}
+            }
+        }
+        for (ClientSocket peer_socket: m_peerToSockets) {
+            if (peer_socket.is_valid()) {
+                try {
+                    peer_socket.close();
+                } catch (SocketException& e) {}
+            }
+        }
+        try {
+            m_controllerSocket.close();
+        } catch (SocketException& e) {}
+
+        try {
+            m_serverSocket.close();
+        } catch (SocketException& e) {}
     }
 };
 
@@ -140,5 +177,6 @@ int main(int argc, char** argv) {
     designation = std::atoi(argv[2]);
     Server server(port, designation);
     server.ControllerCommand();
+    server.close();
     return 0;
 }

@@ -1,6 +1,5 @@
 #include "clientsocket.hpp"
 #include <iostream>
-#include <cerrno>
 
 ClientSocket::ClientSocket() {
     /*If we can not create a socket, bind it to a port or listen to incoming connections, throw an error. */
@@ -46,6 +45,7 @@ void ClientSocket::connect(const std::string host, const int port) {
 
 void ClientSocket::close() {
     if (!Socket::close()) {
+        //std::perror("close");
         throw SocketException("Can not close the socket");;
     }
 }

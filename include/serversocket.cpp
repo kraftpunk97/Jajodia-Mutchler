@@ -1,6 +1,5 @@
 #include "serversocket.hpp"
 #include <iostream>
-#include <cerrno>
 
 ServerSocket::ServerSocket(int port) {
     /*If we can not create a socket, bind it to a port or listen to incoming connections, throw an error. */
@@ -61,6 +60,8 @@ void ServerSocket::accept(ServerSocket& new_socket) const {
 }
 
 void ServerSocket::close() {
-    if(!Socket::close())
+    if(!Socket::close()) {
+        //perror("close");
         throw SocketException("Cannot close the connection.");
+    }
 }

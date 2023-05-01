@@ -1,10 +1,10 @@
 #include <iostream>
 #include "commons.h"
-#include <cstring>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include <errno.h>
+#include <thread>
+#include <cassert>
 
 enum server_name {A, B, C, D, E, F, G, H};
 int main() {
@@ -41,8 +41,26 @@ int main() {
         }
 
         std::cout << "Sent PHASE1 message to server " << (char)('A'+i) << std::endl;
-
     }
+
+    // Controller now waits for confirmation from the servers...
+    std::cout << "Waiting for confirmation from the servers\n";
+    auto partitionResponseUtil = [](int server_socket_fd) {
+        int* server_response_buffer = new int;
+        int bytes_recv = 0;
+        while(bytes_recv == 0) {
+            bytes_recv = recv(server_socket_fd, (int *) server_response_buffer, sizeof(int), 0);
+        }
+        assert(*server_response_buffer == 1);
+    };
+    std::thread server_response_threads[NUM_SERVERS];
+    for (int thread_idx=0; thread_idx<NUM_SERVERS; thread_idx++){
+        server_response_threads[thread_idx] = std::thread(partitionResponseUtil, server_sockets[thread_idx]);
+    }
+    for (int thread_idx=0; thread_idx<NUM_SERVERS; thread_idx++){
+        server_response_threads[thread_idx].join();
+    }
+    std::cout << "Partitioning complete\n";
 
     // Close sockets
     for (int i = 0; i < NUM_SERVERS; i++) {

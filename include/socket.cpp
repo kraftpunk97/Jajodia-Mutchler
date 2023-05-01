@@ -1,7 +1,6 @@
 #include "socket.hpp"
 #include <cstdio>
 #include <cstring>
-#include <errno.h>
 #include <iostream>
 #include <fcntl.h>
 
@@ -12,9 +11,10 @@ Socket::Socket() {
 
 bool Socket::close() {
     if(is_valid() and ::close(m_file_desc) == -1) {
-        //perror("Error occured while closing socket: ");
+        //std::perror("close");
         return false;
     }
+    m_file_desc = -1;
     return true;
 }
 
