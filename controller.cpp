@@ -54,6 +54,7 @@ int main() {
         assert(*server_response_buffer == 1);
     };
     std::thread server_response_threads[NUM_SERVERS];
+
     for (int thread_idx=0; thread_idx<NUM_SERVERS; thread_idx++){
         server_response_threads[thread_idx] = std::thread(partitionResponseUtil, server_sockets[thread_idx]);
     }
@@ -62,6 +63,19 @@ int main() {
     }
     std::cout << "Partitioning complete\n";
 
+    //Send update to server A
+    int* success_msg_buffer = new int;
+    for (int i = 0; i < NUM_SERVERS; i++) {
+        if (i==0)
+            *success_msg_buffer = UPDATE;
+        else
+            *success_msg_buffer = NONE;
+        int bytes_rd = send(server_sockets[i], (int *) success_msg_buffer, sizeof(int), 0);
+        if(bytes_rd < 0)
+            std::cerr << "Unable to send update on X to server" << i << std::endl;
+    }
+    
+        
     // Close sockets
     for (int i = 0; i < NUM_SERVERS; i++) {
         close(server_sockets[i]);

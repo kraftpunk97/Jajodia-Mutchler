@@ -15,6 +15,14 @@ typedef struct {
     int port;
 } server_info;
 
+//Struct to hold Object X
+typedef struct {
+    int VN;
+    int RU;
+    int DS;
+    int server_id;
+} ObjectX;
+
 // Array of server information
 server_info servers[NUM_SERVERS] = {
     {"10.176.69.32", 8080},
