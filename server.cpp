@@ -150,7 +150,6 @@ public:
                 connFromThread.join();
                 break;
             }
-            it++;
         } while(partition_end != std::string::npos);
         phase_itr++;
 
