@@ -14,6 +14,10 @@ auto phase_itr = phases.begin();
 
 int VoteFlag = 0;
 
+struct RequestingServerDeets {
+    int to_idx, from_idx; 
+};
+
 class Server {
 public:
     int m_designation;
@@ -25,6 +29,8 @@ public:
     ObjectX SendInfo;
     ObjectX SetP[NUM_SERVERS];
     int is_Distinguished_flag = 0;
+    int M = 0;
+    int N;
 
     Server(int port, int designation): m_serverSocket(port) {
         ServerSocket new_socket;
@@ -191,8 +197,9 @@ public:
     }
 
     void none() {
-        int requesting_socket = listenForVoteReq();
-        sendVote(requesting_socket);
+        RequestingServerDeets request_deets = listenForVoteReq();
+        sendVote(request_deets.to_idx);
+        listenForUpdate(request_deets.from_idx);
     }
 
     void update() {
@@ -221,6 +228,17 @@ public:
             abort();
     }
 
+    void listenForUpdate(int requesting_socket) {
+        ObjectX* update_buffer = new ObjectX;
+        m_peerFromSockets[requesting_socket].recv(update_buffer, sizeof(ObjectX));
+        SendInfo = *update_buffer;
+        if (update_buffer == -1) 
+            std::cout << "Update was aborted" << std::endl;
+        else {
+            std::cout << "Someone did an update . Values updated to VN:" << SendInfo.VN << "\tRU:" << SendInfo.RU << "\tDS:" << SendInfo.DS << std::endl; 
+        }
+    }
+
     void sendVoteReq() {
         for (int i=0; i < m_peers.size(); i++) {
             int peer_idx = m_peers[i];
@@ -244,7 +262,7 @@ public:
         }    
     }
 
-    int listenForVoteReq() {
+    RequestingServerDeets listenForVoteReq() {
         struct pollfd pfds[m_peers.size()];
 
         for(int i = 0; i < m_peers.size(); i++) {
@@ -254,6 +272,7 @@ public:
 
         int ret =0;
         int recv_socket_idx = -1;
+        RequestingServerDeets request_deets;
         do {
             ret = poll(pfds, m_peers.size(), 100);
             if (ret) {
@@ -266,14 +285,17 @@ public:
                         else {
                             if (bytes_read > 0) {
                                 recv_socket_idx = ListenToReqbuf->server_id;
+                                request_deets.from_idx = j;
+                                request_deets.to_idx = recv_socket_idx;
                                 std::cout << "Received a vote request from " << recv_socket_idx << std::endl;
+                                break;
                             }
                         }
                     }
                 }
             }
         } while( recv_socket_idx == -1);
-        return recv_socket_idx;
+        return request_deets;
     }
 
     void sendVote(int requesting_socket) {
@@ -282,8 +304,7 @@ public:
     }
 
     int Is_Distinguished(ObjectX setP[]) {
-        int M = 0;
-        int M_count, N;
+        int M_count;
         for(int i=0; i< m_peers.size(); i++) {
             if (setP[i].VN > M) 
                 M = setP[i].VN;
@@ -326,15 +347,36 @@ public:
     }
 
     void catch_up() {
-        //if()
+        if(SendInfo.VN < M) {
+            std::cout << "Server has outdated version of X" << std::endl;
+            SendInfo.VN = M;
+        }
+        else
+            std::cout << "Server has latest version of X" << std::endl;
     }
 
     void do_update() {
-
+        SendInfo.VN = M+1;
+        SendInfo.RU = m_peers.size() + 1; // Including the server that wants to perform the update.
+        int min_server_id = SendInfo.server_id;
+        for(int i=0; i<m_peers.size(); i++) {
+            min_server_id = min_server_id < SetP[i].server_id ? min_server_id : SetP[i].server_id;
+        }
+        SendInfo.DS = min_server_id;
+        for (auto peer_id: m_peers) {
+            m_peerToSockets[peer_id].send(&SendInfo, sizeof(ObjectX));
+        }
     }
 
     void abort() {
-
+        ObjectX* abort_info = new ObjectX;
+        abort_info->VN = -1;
+        abort_info->DS = -1;
+        abort_info->RU = -1;
+        abort_info->server_id = m_designation;
+        for (auto peer_id: m_peers) {
+            m_peerToSockets[peer_id].send(abort_info, sizeof(ObjectX));
+        }
     }
 };
 
