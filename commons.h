@@ -15,7 +15,7 @@ enum controller_messages {NONE, START_PHASE, UPDATE, END_PHASE};
 // Hard-coding the phase partition, because I'm *this* close to losing it.
 // All phases should end with a `:`
 std::vector<std::string> phases {
-    ":012::",
+    "12:0::",
 };
 
 // Struct to hold server information

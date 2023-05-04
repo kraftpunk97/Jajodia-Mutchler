@@ -12,8 +12,6 @@
 
 auto phase_itr = phases.begin();
 
-int VoteFlag = 0;
-
 struct RequestingServerDeets {
     int to_idx, from_idx; 
 };
@@ -27,7 +25,7 @@ public:
     ClientSocket m_peerToSockets[NUM_SERVERS];
     std::vector<int> m_peers;
     ObjectX SendInfo;
-    ObjectX SetP[NUM_SERVERS];
+    std::vector<ObjectX> SetP;
     int is_Distinguished_flag = 0;
     int M = 0;
     int N;
@@ -219,7 +217,8 @@ public:
          *      catch_up() -> for every server in setP, send (M-setP[i].VN) updates to setP[i] (?)
          *      The servers need to send a confirmation to the controller after the update is performed.
          */
-        int ret_dist = Is_Distinguished(SetP);
+
+        int ret_dist = isDistinguished();
         if(ret_dist) {
             catch_up();
             do_update();
@@ -232,7 +231,7 @@ public:
         ObjectX* update_buffer = new ObjectX;
         m_peerFromSockets[requesting_socket].recv(update_buffer, sizeof(ObjectX));
         SendInfo = *update_buffer;
-        if (update_buffer == -1) 
+        if (update_buffer->VN == -1)
             std::cout << "Update was aborted" << std::endl;
         else {
             std::cout << "Someone did an update . Values updated to VN:" << SendInfo.VN << "\tRU:" << SendInfo.RU << "\tDS:" << SendInfo.DS << std::endl; 
@@ -258,8 +257,9 @@ public:
                          " DS:" << recv_buffer->DS <<
                          " RU:" << recv_buffer-> RU << std::endl;
             //Store the votes in an array
-            SetP[i] = *recv_buffer;
-        }    
+            SetP.push_back(*recv_buffer);
+        }
+        SetP.push_back(SendInfo);
     }
 
     RequestingServerDeets listenForVoteReq() {
@@ -270,7 +270,7 @@ public:
             pfds[i].events = POLLIN;
         }
 
-        int ret =0;
+        int ret = 0;
         int recv_socket_idx = -1;
         RequestingServerDeets request_deets;
         do {
@@ -303,43 +303,36 @@ public:
         std::cout << "Sent Vote to peer " << requesting_socket << std::endl;
     }
 
-    int Is_Distinguished(ObjectX setP[]) {
-        int M_count;
-        for(int i=0; i< m_peers.size(); i++) {
-            if (setP[i].VN > M) 
-                M = setP[i].VN;
+    int isDistinguished() {
+        for(int i=0; i<= m_peers.size(); i++) {
+            if (SetP[i].VN > M)
+                M = SetP[i].VN;
         }
         std::cout << "Highest version number is " << M << std::endl;
-        for(int i=0; i< m_peers.size(); i++) {
-            if(setP[i].VN == M) 
-                M_count++;
-        }
 
         std::vector<ObjectX> setI;
-        for(int i=0; i< m_peers.size(); i++) {
-            if(setP[i].VN == M) {
-                setI.push_back(setP[i]);
+        for(int i=0; i<=SetP.size(); i++) {
+            if(SetP[i].VN == M) {
+                setI.push_back(SetP[i]);
             }
         }
         //Find N
         N = setI[0].RU;
         int cardI = setI.size();
-        int DS = setI[0].DS;
-
+        std::cout << cardI << " " << N << std::endl;
         //Check if server is part of distinguished partition
         if(cardI > (N/2)) {
             is_Distinguished_flag = 1;
         }
         else if (N%2==0 && cardI==N/2) {
             for(int i=0; i < m_peers.size(); i++) {
-                if(setP[i].DS == SendInfo.DS) {
+                if(SetP[i].DS == SendInfo.DS) {
                     is_Distinguished_flag = 1;
                     break;
                 }
                 else
                     abort();
             }
-            
         }
         else
             abort();
@@ -357,7 +350,7 @@ public:
 
     void do_update() {
         SendInfo.VN = M+1;
-        SendInfo.RU = m_peers.size() + 1; // Including the server that wants to perform the update.
+        SendInfo.RU = SetP.size(); // Including the server that wants to perform the update.
         int min_server_id = SendInfo.server_id;
         for(int i=0; i<m_peers.size(); i++) {
             min_server_id = min_server_id < SetP[i].server_id ? min_server_id : SetP[i].server_id;
@@ -369,6 +362,7 @@ public:
     }
 
     void abort() {
+        std::cout << "Killing this fetus..." << std::endl;
         ObjectX* abort_info = new ObjectX;
         abort_info->VN = -1;
         abort_info->DS = -1;

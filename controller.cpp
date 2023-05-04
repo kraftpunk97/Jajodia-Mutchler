@@ -63,7 +63,7 @@ int main() {
     }
     std::cout << "Partitioning complete\n";
 
-    //Send update to server A
+    //Send update to server
     int* success_msg_buffer = new int;
     for (int i = 0; i < NUM_SERVERS; i++) {
         if (i==0)
