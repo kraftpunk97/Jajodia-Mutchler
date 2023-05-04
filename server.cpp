@@ -23,7 +23,8 @@ public:
     ClientSocket m_peerToSockets[NUM_SERVERS];
     std::vector<int> m_peers;
     ObjectX SendInfo;
-
+    ObjectX SetP[NUM_SERVERS];
+    int is_Distinguished_flag = 0;
 
     Server(int port, int designation): m_serverSocket(port) {
         ServerSocket new_socket;
@@ -211,6 +212,13 @@ public:
          *      catch_up() -> for every server in setP, send (M-setP[i].VN) updates to setP[i] (?)
          *      The servers need to send a confirmation to the controller after the update is performed.
          */
+        int ret_dist = Is_Distinguished(SetP);
+        if(ret_dist) {
+            catch_up();
+            do_update();
+        }
+        else
+            abort();
     }
 
     void sendVoteReq() {
@@ -231,7 +239,9 @@ public:
                          " VN:" << recv_buffer->VN <<
                          " DS:" << recv_buffer->DS <<
                          " RU:" << recv_buffer-> RU << std::endl;
-        }
+            //Store the votes in an array
+            SetP[i] = *recv_buffer;
+        }    
     }
 
     int listenForVoteReq() {
@@ -269,6 +279,62 @@ public:
     void sendVote(int requesting_socket) {
         m_peerToSockets[requesting_socket].send(&SendInfo, sizeof(ObjectX));
         std::cout << "Sent Vote to peer " << requesting_socket << std::endl;
+    }
+
+    int Is_Distinguished(ObjectX setP[]) {
+        int M = 0;
+        int M_count, N;
+        for(int i=0; i< m_peers.size(); i++) {
+            if (setP[i].VN > M) 
+                M = setP[i].VN;
+        }
+        std::cout << "Highest version number is " << M << std::endl;
+        for(int i=0; i< m_peers.size(); i++) {
+            if(setP[i].VN == M) 
+                M_count++;
+        }
+
+        std::vector<ObjectX> setI;
+        for(int i=0; i< m_peers.size(); i++) {
+            if(setP[i].VN == M) {
+                setI.push_back(setP[i]);
+            }
+        }
+        //Find N
+        N = setI[0].RU;
+        int cardI = setI.size();
+        int DS = setI[0].DS;
+
+        //Check if server is part of distinguished partition
+        if(cardI > (N/2)) {
+            is_Distinguished_flag = 1;
+        }
+        else if (N%2==0 && cardI==N/2) {
+            for(int i=0; i < m_peers.size(); i++) {
+                if(setP[i].DS == SendInfo.DS) {
+                    is_Distinguished_flag = 1;
+                    break;
+                }
+                else
+                    abort();
+            }
+            
+        }
+        else
+            abort();
+        return is_Distinguished_flag;
+    }
+
+    void catch_up() {
+        //if()
+    }
+
+    void do_update() {
+
+    }
+
+    void abort() {
+
     }
 };
 
