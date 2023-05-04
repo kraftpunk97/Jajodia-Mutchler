@@ -70,6 +70,8 @@ public:
                 case UPDATE: {
                     std::cout << "Received UPDATE on object X\n";
                     update();
+                    reply();
+                    
                 }
                 break;
                 case END_PHASE: {
@@ -283,10 +285,11 @@ public:
                         if (bytes_read < 0)
                             std::cerr << "Error receiving Vote Request from server " << m_peers[j] << std::endl;
                         else {
-                            if (bytes_read > 0) {
+                            if (bytes_read >= sizeof(ObjectX)) {
                                 recv_socket_idx = ListenToReqbuf->server_id;
                                 request_deets.from_idx = j;
                                 request_deets.to_idx = recv_socket_idx;
+                                std::cout << "Vote details: VN: " << ListenToReqbuf->VN << std::endl;
                                 std::cout << "Received a vote request from " << recv_socket_idx << std::endl;
                                 break;
                             }
@@ -359,10 +362,11 @@ public:
         for (auto peer_id: m_peers) {
             m_peerToSockets[peer_id].send(&SendInfo, sizeof(ObjectX));
         }
+        
+        std::cout << "Updated X" <<std::endl;
     }
 
     void abort() {
-        std::cout << "Killing this fetus..." << std::endl;
         ObjectX* abort_info = new ObjectX;
         abort_info->VN = -1;
         abort_info->DS = -1;
@@ -371,6 +375,14 @@ public:
         for (auto peer_id: m_peers) {
             m_peerToSockets[peer_id].send(abort_info, sizeof(ObjectX));
         }
+        std::cout << "Aborted" << std::endl;
+    }
+
+    void reply() {
+        int reply_buf = 1;
+        m_controllerSocket.send(&reply_buf, sizeof(reply_buf));
+        
+        std::cout << "Replied to controller" << std::endl;
     }
 };
 
