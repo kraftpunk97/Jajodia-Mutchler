@@ -6,15 +6,10 @@
 #include <thread>
 #include <string>
 #include <vector>
-#include <regex>
 #include <unistd.h>
 #include <poll.h>
 
-#define VOTE 1
-// Hard-coding the phase partition, because I'm *this* close to losing it.
-std::vector<std::string> phases {
-    "4:012:5",
-};
+
 auto phase_itr = phases.begin();
 
 int VoteFlag = 0;
@@ -27,6 +22,7 @@ public:
     ServerSocket m_peerFromSockets[NUM_SERVERS];
     ClientSocket m_peerToSockets[NUM_SERVERS];
     std::vector<int> m_peers;
+    ObjectX SendInfo;
 
 
     Server(int port, int designation): m_serverSocket(port) {
@@ -35,13 +31,20 @@ public:
         m_serverSocket.accept(new_socket);
         std::cout << "Connected to controller" << std::endl;
         m_controllerSocket = new_socket;
+        SendInfo.server_id = designation;
+        SendInfo.VN = 1;
+        SendInfo.RU = NUM_SERVERS;
+        SendInfo.DS = 0;
     }
 
     void ControllerCommand(){
         int endphase_flag = 0;
         while (!endphase_flag) {
             int* controllerMsg = new int;
-            int bytes_read = m_controllerSocket.recv(controllerMsg, sizeof(int));
+            int bytes_read;
+            do {
+                bytes_read = m_controllerSocket.recv(controllerMsg, sizeof(int));
+            } while(bytes_read==0);
 
             /*
             *  IF we get a None Start phase message, some "undefined-as-of-now" behaviour
@@ -51,21 +54,23 @@ public:
             switch(*controllerMsg) {
                 case NONE: {
                     std::cout << "Received None\n";
-                    poll_VoteReq();
+                    none();
                 }
                 break;
-                case START_PHASE: phase();
+                case START_PHASE: {
+                    std::cout << "Recieved PHASE\n";
+                    phase();
+                }
                 break;
                 case UPDATE: {
                     std::cout << "Received UPDATE on object X\n";
-                    Send_VoteReq();
+                    update();
                 }
                 break;
                 case END_PHASE: {
                     endphase_flag = 1;
                     std::cout << "Received END_PHASE\n";
                 }
-
                 break;
             }
         }
@@ -73,12 +78,6 @@ public:
     }
 
     void phase() {
-        std::cout << "Received \"PHASE\" message from the controller.\n";
-        std::string current_phase = *phase_itr;
-        std::regex pattern("\\d+");
-        std::sregex_iterator it(current_phase.begin(), current_phase.end(), pattern);
-        std::sregex_iterator end;
-
         // Cut all ties...
         for (ServerSocket peer_socket: m_peerFromSockets) {
             if (peer_socket.is_valid()) {
@@ -92,8 +91,16 @@ public:
         }
 
         // ...And form new bonds. (very poetic)
-        while (it != end) {
-            std::string partition = it->str();
+        std::string current_phase = *phase_itr;
+        std::string separator = ":";
+        std::size_t partition_end;
+        std::size_t partition_start = 0;
+        do {
+            partition_end = current_phase.find(separator, partition_start);
+            std::size_t nchars = partition_end - partition_start;
+            std::string partition = current_phase.substr(partition_start, nchars);
+            std::cout << "Partition is " << partition << std::endl;
+            partition_start = partition_end + 1;
 
             // Am I in this partition?
             auto designation = std::to_string(m_designation);
@@ -144,7 +151,7 @@ public:
                 break;
             }
             it++;
-        }
+        } while(partition_end != std::string::npos);
         phase_itr++;
 
         sleep(1);
@@ -183,47 +190,72 @@ public:
         } catch (SocketException& e) {}
     }
 
-    
-    int CardSetP = m_peers.size();
-    ObjectX SendInfo; //ADD DETAILS
+    void none() {
+        int requesting_socket = listenForVoteReq();
+        sendVote(requesting_socket);
+    }
 
-    void poll_VoteReq() {
-        struct pollfd pfds[CardSetP];
+    void update() {
+        sendVoteReq();
+        getVotes();
+    }
 
-        for(int i = 0; i < CardSetP; i++) {
+    void sendVoteReq() {
+        for (int i=0; i < m_peers.size(); i++) {
+            int peer_idx = m_peers[i];
+            m_peerToSockets[peer_idx].send(&SendInfo, sizeof(ObjectX));
+            std::cout << "Sent Vote Request to peers\n";
+        }
+    }
+
+    void getVotes() {
+        for (int i=0; i<m_peers.size(); i++) {
+            auto* recv_buffer = new ObjectX;
+            try {
+                m_peerFromSockets[i].recv(recv_buffer, sizeof(ObjectX));
+            } catch (SocketException&) { std::perror("getVotes"); }
+            std::cout << "Server:" << recv_buffer->server_id <<
+                         " VN:" << recv_buffer->VN <<
+                         " DS:" << recv_buffer->DS <<
+                         " RU:" << recv_buffer-> RU << std::endl;
+        }
+    }
+
+    int listenForVoteReq() {
+        struct pollfd pfds[m_peers.size()];
+
+        for(int i = 0; i < m_peers.size(); i++) {
             pfds[i].fd = m_peerFromSockets[i].get_file_desc();
             pfds[i].events = POLLIN;
         }
 
         int ret =0;
-        ret = poll(pfds, CardSetP, 10);
-        if(ret) {
-            for (int j = 0; j < CardSetP; j++) {
-                if(pfds[j].revents & POLLIN) {
-                    ObjectX* ListenToReqbuf = new ObjectX;
-                    int bytes_read = m_peerFromSockets[j].recv((ObjectX*) ListenToReqbuf, sizeof(ObjectX));
-                    if(bytes_read < 0)
-                        std::cerr << "Error receiving Vote Request from server " << m_peers[j] << std::endl;
-                    else {
-                        
-                        int send_socket_idx = ListenToReqbuf->server_id;
-                        send(m_peerToSockets[send_socket_idx].get_file_desc(), &SendInfo, sizeof(ObjectX), 0);
-                        std::cout << "Responded to Vote Request from server " << ListenToReqbuf->server_id << std::endl;
-                    }   
+        int recv_socket_idx = -1;
+        do {
+            ret = poll(pfds, m_peers.size(), 100);
+            if (ret) {
+                for (int j = 0; j < m_peers.size(); j++) {
+                    if (pfds[j].revents & POLLIN) {
+                        ObjectX *ListenToReqbuf = new ObjectX;
+                        int bytes_read = m_peerFromSockets[j].recv((ObjectX *) ListenToReqbuf, sizeof(ObjectX));
+                        if (bytes_read < 0)
+                            std::cerr << "Error receiving Vote Request from server " << m_peers[j] << std::endl;
+                        else {
+                            if (bytes_read > 0) {
+                                recv_socket_idx = ListenToReqbuf->server_id;
+                                std::cout << "Received a vote request from " << recv_socket_idx << std::endl;
+                            }
+                        }
+                    }
                 }
             }
-        }
+        } while( recv_socket_idx == -1);
+        return recv_socket_idx;
     }
 
-    void Send_VoteReq() { 
-        for (int i = 0; i < CardSetP; i++) {
-            int peer_idx = m_peers[i];
-            int bytes_read = send(m_peerToSockets[peer_idx].get_file_desc(), &SendInfo, sizeof(ObjectX), 0);
-            if(bytes_read < 0)
-                std::cerr << "Error sending Vote Request to server " << peer_idx << std::endl;
-            else    
-                std::cout << "Sent Vote Request to server " << peer_idx << std::endl;
-        }
+    void sendVote(int requesting_socket) {
+        m_peerToSockets[requesting_socket].send(&SendInfo, sizeof(ObjectX));
+        std::cout << "Sent Vote to peer " << requesting_socket << std::endl;
     }
 };
 

@@ -73,9 +73,11 @@ int main() {
         int bytes_rd = send(server_sockets[i], (int *) success_msg_buffer, sizeof(int), 0);
         if(bytes_rd < 0)
             std::cerr << "Unable to send update on X to server" << i << std::endl;
+        else
+            std::cout << "Sent an update on X to server" << i << std::endl;
     }
-    
-        
+
+
     // Close sockets
     for (int i = 0; i < NUM_SERVERS; i++) {
         close(server_sockets[i]);
