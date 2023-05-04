@@ -197,6 +197,20 @@ public:
     void update() {
         sendVoteReq();
         getVotes();
+         /*TODO: Store the votes in an array. (Set P)
+         *      M = Find the max VN
+         *      Store all the votes with max VN (set I)
+         *      Find N = setI[0].RU
+         *      The three cases = if in majority, equal, or minority (is_distinguised())
+         *      majority = setP.size() > N/2  -> do_update(); distinguished_flag = true (?);
+         *      even = setP.size() == N/2 -> setP.in(setI[0].DS) == true -> do_update();
+         *                                                       == false -> abort();
+         *      minority = abort();
+         *      catch_up() -> if self.VN < M -> (?)
+         *      do_update() -> self.VN = M+1
+         *      catch_up() -> for every server in setP, send (M-setP[i].VN) updates to setP[i] (?)
+         *      The servers need to send a confirmation to the controller after the update is performed.
+         */
     }
 
     void sendVoteReq() {
