@@ -392,7 +392,7 @@ public:
 
 int main(int argc, char** argv) {
     if (argc < 3) {
-        std::cout << "Args: <server_designation> <server_port>\n";
+        std::cout << "Args: <server_port> <server_designation>\n";
         return 1;
     }
 
