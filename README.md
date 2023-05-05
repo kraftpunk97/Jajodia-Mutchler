@@ -1,4 +1,5 @@
 # Jajodia-Mutchler
+The final project for the "Advanced Operating Systems" course (CS6378), in which we implement the Jajodia-Mutchler algorithm.
 
 ## How to compile
 
