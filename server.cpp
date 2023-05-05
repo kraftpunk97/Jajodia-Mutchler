@@ -26,7 +26,6 @@ public:
     std::vector<int> m_peers;
     ObjectX SendInfo;
     std::vector<ObjectX> SetP;
-    int is_Distinguished_flag = 0;
     int M = 0;
     int N;
 
@@ -58,17 +57,17 @@ public:
             
             switch(*controllerMsg) {
                 case NONE: {
-                    std::cout << "Received None\n";
+                    std::cout << "\n\n\nReceived None\n";
                     none();
                 }
                 break;
                 case START_PHASE: {
-                    std::cout << "Recieved PHASE\n";
+                    std::cout << "\n\n\nRecieved PHASE\n";
                     phase();
                 }
                 break;
                 case UPDATE: {
-                    std::cout << "Received UPDATE on object X\n";
+                    std::cout << "\n\n\nReceived UPDATE on object X\n";
                     update();
                     reply();
                     
@@ -76,24 +75,33 @@ public:
                 break;
                 case END_PHASE: {
                     endphase_flag = 1;
-                    std::cout << "Received END_PHASE\n";
+                    std::cout << "\n\n\nReceived END_PHASE\n";
                 }
                 break;
             }
+            std::cout << "VN:" << SendInfo.VN << "\tRU:" << SendInfo.RU << "\tDS:" << SendInfo.DS << std::endl;
         }
         
     }
 
     void phase() {
         // Cut all ties...
+        m_peers.clear();
+        SetP.clear();
         for (ServerSocket peer_socket: m_peerFromSockets) {
             if (peer_socket.is_valid()) {
-                peer_socket.close();
+                try {
+                    peer_socket.close();
+                } catch (SocketException& e) {}
+
             }
         }
         for (ClientSocket peer_socket: m_peerToSockets) {
             if (peer_socket.is_valid()) {
-                peer_socket.close();
+                try {
+                    peer_socket.close();
+                } catch (SocketException &e) {}
+
             }
         }
 
@@ -203,22 +211,9 @@ public:
     }
 
     void update() {
+        SetP.clear();
         sendVoteReq();
         getVotes();
-         /*TODO: Store the votes in an array. (Set P)
-         *      M = Find the max VN
-         *      Store all the votes with max VN (set I)
-         *      Find N = setI[0].RU
-         *      The three cases = if in majority, equal, or minority (is_distinguised())
-         *      majority = setP.size() > N/2  -> do_update(); distinguished_flag = true (?);
-         *      even = setP.size() == N/2 -> setP.in(setI[0].DS) == true -> do_update();
-         *                                                       == false -> abort();
-         *      minority = abort();
-         *      catch_up() -> if self.VN < M -> (?)
-         *      do_update() -> self.VN = M+1
-         *      catch_up() -> for every server in setP, send (M-setP[i].VN) updates to setP[i] (?)
-         *      The servers need to send a confirmation to the controller after the update is performed.
-         */
 
         int ret_dist = isDistinguished();
         if(ret_dist) {
@@ -230,19 +225,25 @@ public:
     }
 
     void listenForUpdate(int requesting_socket) {
-        ObjectX* update_buffer = new ObjectX;
-        m_peerFromSockets[requesting_socket].recv(update_buffer, sizeof(ObjectX));
-        SendInfo = *update_buffer;
-        if (update_buffer->VN == -1)
-            std::cout << "Update was aborted" << std::endl;
+        if (requesting_socket != -1) {
+            ObjectX *update_buffer = new ObjectX;
+            m_peerFromSockets[requesting_socket].recv(update_buffer, sizeof(ObjectX));
+            if (update_buffer->VN == -1)
+                std::cout << "Update was aborted" << std::endl;
+            else {
+                SendInfo = *update_buffer;
+                SendInfo.server_id = m_designation;
+                std::cout << "Someone did an update . Values updated to VN:" << SendInfo.VN << "\tRU:" << SendInfo.RU
+                          << "\tDS:" << SendInfo.DS << std::endl;
+            }
+        }
         else {
-            std::cout << "Someone did an update . Values updated to VN:" << SendInfo.VN << "\tRU:" << SendInfo.RU << "\tDS:" << SendInfo.DS << std::endl; 
+            std::cout << "No update received for this round\n";
         }
     }
 
     void sendVoteReq() {
-        for (int i=0; i < m_peers.size(); i++) {
-            int peer_idx = m_peers[i];
+        for (auto peer_idx: m_peers) {
             m_peerToSockets[peer_idx].send(&SendInfo, sizeof(ObjectX));
             std::cout << "Sent Vote Request to peers\n";
         }
@@ -274,13 +275,14 @@ public:
 
         int ret = 0;
         int recv_socket_idx = -1;
-        RequestingServerDeets request_deets;
+        RequestingServerDeets request_deets = {-1, -1};
+        int cycle=0;
         do {
             ret = poll(pfds, m_peers.size(), 100);
             if (ret) {
                 for (int j = 0; j < m_peers.size(); j++) {
                     if (pfds[j].revents & POLLIN) {
-                        ObjectX *ListenToReqbuf = new ObjectX;
+                        auto *ListenToReqbuf = new ObjectX;
                         int bytes_read = m_peerFromSockets[j].recv((ObjectX *) ListenToReqbuf, sizeof(ObjectX));
                         if (bytes_read < 0)
                             std::cerr << "Error receiving Vote Request from server " << m_peers[j] << std::endl;
@@ -289,7 +291,7 @@ public:
                                 recv_socket_idx = ListenToReqbuf->server_id;
                                 request_deets.from_idx = j;
                                 request_deets.to_idx = recv_socket_idx;
-                                std::cout << "Vote details: VN: " << ListenToReqbuf->VN << std::endl;
+                                //std::cout << "Vote details: " << request_deets.from_idx << "\t" << request_deets.to_idx << std::endl;
                                 std::cout << "Received a vote request from " << recv_socket_idx << std::endl;
                                 break;
                             }
@@ -297,48 +299,48 @@ public:
                     }
                 }
             }
-        } while( recv_socket_idx == -1);
+            cycle++;
+        } while(cycle<4 && recv_socket_idx==-1);
         return request_deets;
     }
 
     void sendVote(int requesting_socket) {
-        m_peerToSockets[requesting_socket].send(&SendInfo, sizeof(ObjectX));
-        std::cout << "Sent Vote to peer " << requesting_socket << std::endl;
+        if (requesting_socket != -1) {
+            m_peerToSockets[requesting_socket].send(&SendInfo, sizeof(ObjectX));
+            std::cout << "Sent Vote to peer " << requesting_socket << std::endl;
+        }
     }
 
     int isDistinguished() {
-        for(int i=0; i<= m_peers.size(); i++) {
-            if (SetP[i].VN > M)
-                M = SetP[i].VN;
+        int is_Distinguished_flag = 0;
+        for(auto site: SetP) {
+            if (site.VN > M)
+                M = site.VN;
         }
         std::cout << "Highest version number is " << M << std::endl;
 
         std::vector<ObjectX> setI;
-        for(int i=0; i<=SetP.size(); i++) {
-            if(SetP[i].VN == M) {
-                setI.push_back(SetP[i]);
+        for(auto site: SetP) {
+            if(site.VN == M) {
+                setI.push_back(site);
             }
         }
         //Find N
         N = setI[0].RU;
         int cardI = setI.size();
-        std::cout << cardI << " " << N << std::endl;
+        std::cout << "card(I):"  << cardI << " N:" << N << std::endl;
         //Check if server is part of distinguished partition
         if(cardI > (N/2)) {
             is_Distinguished_flag = 1;
         }
         else if (N%2==0 && cardI==N/2) {
-            for(int i=0; i < m_peers.size(); i++) {
-                if(SetP[i].DS == SendInfo.DS) {
+            for(auto site: SetP) {
+                if(site.server_id == SendInfo.DS) {
                     is_Distinguished_flag = 1;
                     break;
                 }
-                else
-                    abort();
             }
         }
-        else
-            abort();
         return is_Distinguished_flag;
     }
 
@@ -355,8 +357,8 @@ public:
         SendInfo.VN = M+1;
         SendInfo.RU = SetP.size(); // Including the server that wants to perform the update.
         int min_server_id = SendInfo.server_id;
-        for(int i=0; i<m_peers.size(); i++) {
-            min_server_id = min_server_id < SetP[i].server_id ? min_server_id : SetP[i].server_id;
+        for(auto site: SetP) {
+            min_server_id = min_server_id < site.server_id ? min_server_id : site.server_id;
         }
         SendInfo.DS = min_server_id;
         for (auto peer_id: m_peers) {
