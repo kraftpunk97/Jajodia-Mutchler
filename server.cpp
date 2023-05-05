@@ -49,25 +49,19 @@ public:
             do {
                 bytes_read = m_controllerSocket.recv(controllerMsg, sizeof(int));
             } while(bytes_read==0);
-
-            /*
-            *  IF we get a None Start phase message, some "undefined-as-of-now" behaviour
-            *  If we get a UPDATE Message,
-            * */
             
             switch(*controllerMsg) {
                 case NONE: {
-                    std::cout << "\n\n\nReceived None\n";
                     none();
                 }
                 break;
                 case START_PHASE: {
-                    std::cout << "\n\n\nRecieved PHASE\n";
+                    std::cout << "\n\n\nReceived a Phase Start message from controller\n";
                     phase();
                 }
                 break;
                 case UPDATE: {
-                    std::cout << "\n\n\nReceived UPDATE on object X\n";
+                    std::cout << "\n\n\nReceived UPDATE on object X from controller\n";
                     update();
                     reply();
                     
@@ -75,7 +69,7 @@ public:
                 break;
                 case END_PHASE: {
                     endphase_flag = 1;
-                    std::cout << "\n\n\nReceived END_PHASE\n";
+                    std::cout << "\n\n\nReceived END_PHASE from controller\n";
                 }
                 break;
             }
@@ -85,7 +79,7 @@ public:
     }
 
     void phase() {
-        // Cut all ties...
+        // Socket connection sever
         m_peers.clear();
         SetP.clear();
         for (ServerSocket peer_socket: m_peerFromSockets) {
@@ -105,7 +99,7 @@ public:
             }
         }
 
-        // ...And form new bonds. (very poetic)
+        //Form connections
         std::string current_phase = *phase_itr;
         std::string separator = ":";
         std::size_t partition_end;
@@ -120,7 +114,6 @@ public:
             // Am I in this partition?
             auto designation = std::to_string(m_designation);
             if (partition.find(designation) != std::string::npos) {
-                std::cout << "Found the partition\n";
                 // Who are my neighbors?
                 for (int peer: partition) {
                     peer -= '0';
@@ -133,10 +126,7 @@ public:
                     std::cout << " " << peer;
                 std::cout << std::endl;
 
-
-                // Hi-Diddly-Ho, Neighborino!
-                // Two parts that have to be done simultaneously...
-                // 1. Listen for connections from other servers
+                //Listen for connections from other servers
                 auto connFromUtil = [=]() {
                     for (int i = 0; i < m_peers.size(); i++) {
                         ServerSocket new_socket;
@@ -148,7 +138,7 @@ public:
                 std::thread connFromThread = std::thread(connFromUtil);
 
                 sleep(1);
-                // 2. Connect to other servers
+                //Connect to other servers
                 auto connToUtil = [=]() {
                     for (int peer: m_peers) {
                         m_peerToSockets[peer] = ClientSocket();
@@ -173,13 +163,10 @@ public:
         int* success_msg_buffer = new int;
         *success_msg_buffer = 1;
         m_controllerSocket.send(success_msg_buffer, sizeof(int));
-        std::cout << "Sent the partitioning confirmation to the controller.\n";
+        //std::cout << "Sent the partitioning confirmation to the controller.\n";
     }
 
     void close() {
-        /*
-         * Because we're fucking decent human beings...
-         * */
         sleep(1);
         for (ServerSocket peer_socket: m_peerFromSockets) {
             if (peer_socket.is_valid()) {
@@ -233,7 +220,7 @@ public:
             else {
                 SendInfo = *update_buffer;
                 SendInfo.server_id = m_designation;
-                std::cout << "Someone did an update . Values updated to VN:" << SendInfo.VN << "\tRU:" << SendInfo.RU
+                std::cout << "ObjectX updated to - VN:" << SendInfo.VN << "\tRU:" << SendInfo.RU
                           << "\tDS:" << SendInfo.DS << std::endl;
             }
         }
@@ -292,7 +279,7 @@ public:
                                 request_deets.from_idx = j;
                                 request_deets.to_idx = recv_socket_idx;
                                 //std::cout << "Vote details: " << request_deets.from_idx << "\t" << request_deets.to_idx << std::endl;
-                                std::cout << "Received a vote request from " << recv_socket_idx << std::endl;
+                                std::cout << "Received a vote request from server " << recv_socket_idx << std::endl;
                                 break;
                             }
                         }
@@ -307,7 +294,7 @@ public:
     void sendVote(int requesting_socket) {
         if (requesting_socket != -1) {
             m_peerToSockets[requesting_socket].send(&SendInfo, sizeof(ObjectX));
-            std::cout << "Sent Vote to peer " << requesting_socket << std::endl;
+            std::cout << "Sent Vote to server " << requesting_socket << std::endl;
         }
     }
 
@@ -317,7 +304,7 @@ public:
             if (site.VN > M)
                 M = site.VN;
         }
-        std::cout << "Highest version number is " << M << std::endl;
+        std::cout << "Latest version number is " << M << std::endl;
 
         std::vector<ObjectX> setI;
         for(auto site: SetP) {

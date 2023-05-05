@@ -42,7 +42,7 @@ int main() {
             continue;
         }
 
-        std::cout << "Sent PHASE1 message to server " << (char)('A'+i) << std::endl;
+        std::cout << "Sent START PHASE1 message to server " << (char)('A'+i) << std::endl;
     }
 
     // Controller now waits for confirmation from the servers...
@@ -65,7 +65,7 @@ int main() {
     }
     std::cout << "Partitioning complete\n";
 
-    //Send update to server
+    //Send update to server A
     int* success_msg_buffer = new int;
     for (int i = 0; i < NUM_SERVERS; i++) {
         if (i==0)
@@ -75,10 +75,8 @@ int main() {
         int bytes_rd = send(server_sockets[i], (int *) success_msg_buffer, sizeof(int), 0);
         if(bytes_rd < 0)
             std::cerr << "Unable to send update on X to server" << i << std::endl;
-        else
-            std::cout << "Sent an update on X to server" << i << std::endl;
     }
-    //bzero(&success_msg_buffer, sizeof(success_msg_buffer));
+    std::cout << "Sent an update on X to server A" << std::endl;
 
     //Receive Response from Server A
     int response_buf;
@@ -87,7 +85,6 @@ int main() {
     }
     else 
         std::cout<< "Received response from server A " << std::endl;
-    //bzero(&response_buf, sizeof(response_buf));
 
     //Send update to server B
     for (int i = 0; i < NUM_SERVERS; i++) {
@@ -98,10 +95,8 @@ int main() {
         int bytes_rd = send(server_sockets[i], (int *) success_msg_buffer, sizeof(int), 0);
         if(bytes_rd < 0)
             std::cerr << "Unable to send update on X to server" << i << std::endl;
-        else
-            std::cout << "Sent an update on X to server" << i << std::endl;
     }
-    //bzero(&success_msg_buffer, sizeof(success_msg_buffer));
+    std::cout << "Sent an update on X to server B" << std::endl;
 
     //Receive Response from Server B
     if (recv(server_sockets[1], &response_buf, sizeof(int), 0) < 0) {
@@ -109,7 +104,8 @@ int main() {
     }
     else 
         std::cout<< "Received response from server B " << std::endl;
-    //bzero(&response_buf, sizeof(response_buf));
+    
+        std::cout << "End of phase 1" << std::endl;
 
 /*************************************************************/
     //Send "PHASE2" message to server
@@ -140,10 +136,8 @@ int main() {
         int bytes_rd = send(server_sockets[i], (int *) success_msg_buffer, sizeof(int), 0);
         if(bytes_rd < 0)
             std::cerr << "Unable to send update on X to server" << i << std::endl;
-        else
-            std::cout << "Sent an update on X to server" << i << std::endl;
-    }
-    //bzero(&success_msg_buffer, sizeof(success_msg_buffer));
+    }    
+    std::cout << "Sent an update on X to server A" << std::endl;
 
     //Receive Response from Server A
     if (recv(server_sockets[0], &response_buf, sizeof(int), 0) < 0) {
@@ -151,7 +145,6 @@ int main() {
     }
     else 
         std::cout<< "Received response from server A " << std::endl;
-    //bzero(&response_buf, sizeof(response_buf));
 
     //Send update to server B
     for (int i = 0; i < NUM_SERVERS; i++) {
@@ -162,10 +155,8 @@ int main() {
         int bytes_rd = send(server_sockets[i], (int *) success_msg_buffer, sizeof(int), 0);
         if(bytes_rd < 0)
             std::cerr << "Unable to send update on X to server" << i << std::endl;
-        else
-            std::cout << "Sent an update on X to server" << i << std::endl;
     }
-    //bzero(&success_msg_buffer, sizeof(success_msg_buffer));
+        std::cout << "Sent an update on X to server B" << std::endl;
 
     //Receive Response from Server B
     if (recv(server_sockets[1], &response_buf, sizeof(int), 0) < 0) {
@@ -173,7 +164,6 @@ int main() {
     }
     else 
         std::cout<< "Received response from server B " << std::endl;
-    //bzero(&response_buf, sizeof(response_buf));
 
     //Send update to server E
     for (int i = 0; i < NUM_SERVERS; i++) {
@@ -184,18 +174,15 @@ int main() {
         int bytes_rd = send(server_sockets[i], (int *) success_msg_buffer, sizeof(int), 0);
         if(bytes_rd < 0)
             std::cerr << "Unable to send update on X to server" << i << std::endl;
-        else
-            std::cout << "Sent an update on X to server" << i << std::endl;
     }
-    //bzero(&success_msg_buffer, sizeof(success_msg_buffer));
+    std::cout << "Sent an update on X to server E" << std::endl;
 
     //Receive Response from Server E
     if (recv(server_sockets[4], &response_buf, sizeof(int), 0) < 0) {
-            std::cerr << "Error receiving response from server A " << std::endl;
+            std::cerr << "Error receiving response from server E " << std::endl;
     }
     else 
-        std::cout<< "Received response from server A " << std::endl;
-    //bzero(&response_buf, sizeof(response_buf));
+        std::cout<< "Received response from server E " << std::endl;
 
     //Send update to server F
     for (int i = 0; i < NUM_SERVERS; i++) {
@@ -206,10 +193,8 @@ int main() {
         int bytes_rd = send(server_sockets[i], (int *) success_msg_buffer, sizeof(int), 0);
         if(bytes_rd < 0)
             std::cerr << "Unable to send update on X to server" << i << std::endl;
-        else
-            std::cout << "Sent an update on X to server" << i << std::endl;
     }
-    //bzero(&success_msg_buffer, sizeof(success_msg_buffer));
+    std::cout << "Sent an update on X to server F" << std::endl;
 
     //Receive Response from Server F
     if (recv(server_sockets[5], &response_buf, sizeof(int), 0) < 0) {
@@ -217,8 +202,8 @@ int main() {
     }
     else 
         std::cout<< "Received response from server F " << std::endl;
-    //bzero(&response_buf, sizeof(response_buf));
 
+    std::cout << "End of phase 2" << std::endl;
 /*************************************************************/
     // Send "PHASE3" message to server
     int phase3_start = START_PHASE;
@@ -248,10 +233,8 @@ int main() {
         int bytes_rd = send(server_sockets[i], (int *) success_msg_buffer, sizeof(int), 0);
         if(bytes_rd < 0)
             std::cerr << "Unable to send update on X to server" << i << std::endl;
-        else
-            std::cout << "Sent an update on X to server" << i << std::endl;
     }
-    //bzero(&success_msg_buffer, sizeof(success_msg_buffer));
+    std::cout << "Sent an update on X to server A" << std::endl;
 
     //Receive Response from Server A
     if (recv(server_sockets[0], &response_buf, sizeof(int), 0) < 0) {
@@ -259,7 +242,6 @@ int main() {
     }
     else 
         std::cout<< "Received response from server A " << std::endl;
-    //bzero(&response_buf, sizeof(response_buf));
 
     //Send update to server A
     for (int i = 0; i < NUM_SERVERS; i++) {
@@ -270,10 +252,8 @@ int main() {
         int bytes_rd = send(server_sockets[i], (int *) success_msg_buffer, sizeof(int), 0);
         if(bytes_rd < 0)
             std::cerr << "Unable to send update on X to server" << i << std::endl;
-        else
-            std::cout << "Sent an update on X to server" << i << std::endl;
     }
-    //bzero(&success_msg_buffer, sizeof(success_msg_buffer));
+    std::cout << "Sent an update on X to server A" << std::endl;
 
     //Receive Response from Server A
     if (recv(server_sockets[0], &response_buf, sizeof(int), 0) < 0) {
@@ -281,7 +261,6 @@ int main() {
     }
     else 
         std::cout << "Received response from server A " << std::endl;
-    //bzero(&response_buf, sizeof(response_buf));
 
     //Send update to server B
     for (int i = 0; i < NUM_SERVERS; i++) {
@@ -292,10 +271,8 @@ int main() {
         int bytes_rd = send(server_sockets[i], (int *) success_msg_buffer, sizeof(int), 0);
         if(bytes_rd < 0)
             std::cerr << "Unable to send update on X to server" << i << std::endl;
-        else
-            std::cout << "Sent an update on X to server" << i << std::endl;
     }
-    //bzero(&success_msg_buffer, sizeof(success_msg_buffer));
+    std::cout << "Sent an update on X to server B" << std::endl;
 
     //Receive Response from Server B
     if (recv(server_sockets[1], &response_buf, sizeof(int), 0) < 0) {
@@ -303,7 +280,6 @@ int main() {
     }
     else 
         std::cout<< "Received response from server B " << std::endl;
-    //bzero(&response_buf, sizeof(response_buf));
 
     //Send update to server D
     for (int i = 0; i < NUM_SERVERS; i++) {
@@ -314,10 +290,8 @@ int main() {
         int bytes_rd = send(server_sockets[i], (int *) success_msg_buffer, sizeof(int), 0);
         if(bytes_rd < 0)
             std::cerr << "Unable to send update on X to server" << i << std::endl;
-        else
-            std::cout << "Sent an update on X to server" << i << std::endl;
     }
-    //bzero(&success_msg_buffer, sizeof(success_msg_buffer));
+    std::cout << "Sent an update on X to server D" << std::endl;
 
     //Receive Response from Server D
     if (recv(server_sockets[3], &response_buf, sizeof(int), 0) < 0) {
@@ -325,7 +299,6 @@ int main() {
     }
     else 
         std::cout<< "Received response from server D " << std::endl;
-    //bzero(&response_buf, sizeof(response_buf));
 
    //Send update to server E
     for (int i = 0; i < NUM_SERVERS; i++) {
@@ -336,18 +309,15 @@ int main() {
         int bytes_rd = send(server_sockets[i], (int *) success_msg_buffer, sizeof(int), 0);
         if(bytes_rd < 0)
             std::cerr << "Unable to send update on X to server" << i << std::endl;
-        else
-            std::cout << "Sent an update on X to server" << i << std::endl;
     }
-    //bzero(&success_msg_buffer, sizeof(success_msg_buffer));
+    std::cout << "Sent an update on X to server E" << std::endl;
 
     //Receive Response from Server E
     if (recv(server_sockets[4], &response_buf, sizeof(int), 0) < 0) {
-            std::cerr << "Error receiving response from server A " << std::endl;
+            std::cerr << "Error receiving response from server E " << std::endl;
     }
     else 
-        std::cout<< "Received response from server A " << std::endl;
-    //bzero(&response_buf, sizeof(response_buf));
+        std::cout<< "Received response from server E " << std::endl;
 
     //Send update to server F
     for (int i = 0; i < NUM_SERVERS; i++) {
@@ -358,10 +328,8 @@ int main() {
         int bytes_rd = send(server_sockets[i], (int *) success_msg_buffer, sizeof(int), 0);
         if(bytes_rd < 0)
             std::cerr << "Unable to send update on X to server" << i << std::endl;
-        else
-            std::cout << "Sent an update on X to server" << i << std::endl;
     }
-    //bzero(&success_msg_buffer, sizeof(success_msg_buffer));
+    std::cout << "Sent an update on X to server A" << std::endl;
 
     //Receive Response from Server F
     if (recv(server_sockets[5], &response_buf, sizeof(int), 0) < 0) {
@@ -369,7 +337,6 @@ int main() {
     }
     else 
         std::cout<< "Received response from server F " << std::endl;
-    //bzero(&response_buf, sizeof(response_buf));
 
    //Send update to server H
     for (int i = 0; i < NUM_SERVERS; i++) {
@@ -380,10 +347,8 @@ int main() {
         int bytes_rd = send(server_sockets[i], (int *) success_msg_buffer, sizeof(int), 0);
         if(bytes_rd < 0)
             std::cerr << "Unable to send update on X to server" << i << std::endl;
-        else
-            std::cout << "Sent an update on X to server" << i << std::endl;
     }
-    //bzero(&success_msg_buffer, sizeof(success_msg_buffer));
+    std::cout << "Sent an update on X to server H" << std::endl;
 
     //Receive Response from Server H
     if (recv(server_sockets[7], &response_buf, sizeof(int), 0) < 0) {
@@ -391,7 +356,6 @@ int main() {
     }
     else 
         std::cout<< "Received response from server H " << std::endl;
-    //bzero(&response_buf, sizeof(response_buf));
 
     //Send update to server H
     for (int i = 0; i < NUM_SERVERS; i++) {
@@ -402,10 +366,8 @@ int main() {
         int bytes_rd = send(server_sockets[i], (int *) success_msg_buffer, sizeof(int), 0);
         if(bytes_rd < 0)
             std::cerr << "Unable to send update on X to server" << i << std::endl;
-        else
-            std::cout << "Sent an update on X to server" << i << std::endl;
     }
-    //bzero(&success_msg_buffer, sizeof(success_msg_buffer));
+    std::cout << "Sent an update on X to server H" << std::endl;
 
     //Receive Response from Server H
     if (recv(server_sockets[7], &response_buf, sizeof(int), 0) < 0) {
@@ -413,8 +375,8 @@ int main() {
     }
     else 
         std::cout<< "Received response from server H " << std::endl;
-    //bzero(&response_buf, sizeof(response_buf));
-
+        
+    std::cout << "End of phase 3" << std::endl;
 /*************************************************************/
     // Send "PHASE4" message to server
     int phase4_start = START_PHASE;
@@ -444,10 +406,8 @@ int main() {
         int bytes_rd = send(server_sockets[i], (int *) success_msg_buffer, sizeof(int), 0);
         if(bytes_rd < 0)
             std::cerr << "Unable to send update on X to server" << i << std::endl;
-        else
-            std::cout << "Sent an update on X to server" << i << std::endl;
     }
-    //bzero(&success_msg_buffer, sizeof(success_msg_buffer));
+    std::cout << "Sent an update on X to server B" << std::endl;
 
     //Receive Response from Server B
     if (recv(server_sockets[1], &response_buf, sizeof(int), 0) < 0) {
@@ -455,7 +415,6 @@ int main() {
     }
     else 
         std::cout<< "Received response from server B " << std::endl;
-    //bzero(&response_buf, sizeof(response_buf));
 
     //Send update to server D
     for (int i = 0; i < NUM_SERVERS; i++) {
@@ -466,10 +425,8 @@ int main() {
         int bytes_rd = send(server_sockets[i], (int *) success_msg_buffer, sizeof(int), 0);
         if(bytes_rd < 0)
             std::cerr << "Unable to send update on X to server" << i << std::endl;
-        else
-            std::cout << "Sent an update on X to server" << i << std::endl;
     }
-    //bzero(&success_msg_buffer, sizeof(success_msg_buffer));
+    std::cout << "Sent an update on X to server D" << std::endl;
 
     //Receive Response from Server D
     if (recv(server_sockets[3], &response_buf, sizeof(int), 0) < 0) {
@@ -477,7 +434,6 @@ int main() {
     }
     else 
         std::cout<< "Received response from server D " << std::endl;
-    //bzero(&response_buf, sizeof(response_buf));
 
     for (int i = 0; i < NUM_SERVERS; i++) {
         *success_msg_buffer = END_PHASE;
