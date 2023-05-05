@@ -7,6 +7,7 @@
 #include <cassert>
 #include <strings.h>
 
+
 enum server_name {A, B, C, D, E, F, G, H};
 int main() {
     // Create sockets and connect to servers
@@ -279,7 +280,7 @@ int main() {
             std::cerr << "Error receiving response from server A " << std::endl;
     }
     else 
-        std::cout<< "Received response from server A " << std::endl;
+        std::cout << "Received response from server A " << std::endl;
     //bzero(&response_buf, sizeof(response_buf));
 
     //Send update to server B
@@ -478,6 +479,14 @@ int main() {
         std::cout<< "Received response from server D " << std::endl;
     //bzero(&response_buf, sizeof(response_buf));
 
+    for (int i = 0; i < NUM_SERVERS; i++) {
+        *success_msg_buffer = END_PHASE;
+        int bytes_rd = send(server_sockets[i], (int *) success_msg_buffer, sizeof(int), 0);
+        if(bytes_rd < 0)
+            std::cerr << "Unable to send terminate to server" << i << std::endl;
+        else
+            std::cout << "Sent terminate to server" << i << std::endl;
+    }
 
     // Close sockets
     for (int i = 0; i < NUM_SERVERS; i++) {

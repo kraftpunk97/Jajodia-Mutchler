@@ -18,7 +18,7 @@ std::vector<std::string> phases {
     "01234567:",
     "0123:4567:",
     "0:123:456:7:",
-    "123456:"
+    "0:123456:7:"
 };
 
 // Struct to hold server information
@@ -28,23 +28,24 @@ typedef struct {
 } server_info;
 
 //Struct to hold Object X
-typedef struct {
+struct ObjectX {
     int VN;
     int RU;
     int DS;
     int server_id;
-} ObjectX;
+};
+
 
 // Array of server information
 server_info servers[NUM_SERVERS] = {
-    {"10.176.69.32", 8080},
-    {"10.176.69.33", 8081},
-    {"10.176.69.34", 8082},
-    {"10.176.69.35", 8083},
-    {"10.176.69.36", 8084},
-    {"10.176.69.37", 8085},
-    {"10.176.69.38", 8086},
-    {"10.176.69.39", 8087},
+    {"172.30.172.145", 8080},
+    {"172.30.172.145", 8081},
+    {"172.30.172.145", 8082},
+    {"172.30.172.145", 8083},
+    {"172.30.172.145", 8084},
+    {"172.30.172.145", 8085},
+    {"172.30.172.145", 8086},
+    {"172.30.172.145", 8087},
 };
 
 #endif //JAJODIA_MUTCHLER_COMMONS_H
