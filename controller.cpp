@@ -16,11 +16,11 @@ void sendPhaseMessage(int *server_sockets) {
     int phase_start = START_PHASE;
     for (int i=0; i<NUM_SERVERS; i++) {
         if (send(server_sockets[i], &phase_start, sizeof(int), 0) < 0) {
-            std::cerr << "Error sending PHASE1 message to server " << (char)('A'+i) << std::endl;
+            std::cerr << "Error sending start phase message to server " << (char)('A'+i) << std::endl;
             close(server_sockets[i]);
             continue;
         }
-        std::cout << "Sent PHASE message to server " << (char)('A'+i) << std::endl;
+        std::cout << "Sent start phase message to server " << (char)('A'+i) << std::endl;
     }
 
     // Controller now waits for confirmation from the servers...
@@ -51,15 +51,15 @@ void sendUpdateToServer(int *server_sockets, int server_id)  {
      */
     int* success_msg_buffer = new int;
     for (int i = 0; i < NUM_SERVERS; i++) {
-        if (i == server_id)
+        if (i == server_id) {
             *success_msg_buffer = UPDATE;
+            std::cout << "Sending an update on X to server" << (char) ('A'+server_id) << std::endl;
+        }
         else
             *success_msg_buffer = NONE;
         int bytes_rd = send(server_sockets[i], (int *) success_msg_buffer, sizeof(int), 0);
         if(bytes_rd < 0)
             std::cerr << "Unable to send update on X to server" << i << std::endl;
-        else
-            std::cout << "Sent an update on X to server" << i << std::endl;
     }
 
     //Receive Response from server
@@ -79,9 +79,9 @@ void sendTerminate(int* server_sockets) {
         int success_msg_buffer = END_PHASE;
         int bytes_rd = send(server_sockets[i],  &success_msg_buffer, sizeof(int), 0);
         if(bytes_rd < 0)
-            std::cerr << "Unable to send terminate to server" << i << std::endl;
+            std::cerr << "Unable to send phase terminate to server" << i << std::endl;
         else
-            std::cout << "Sent terminate to server" << i << std::endl;
+            std::cout << "Sent phase terminate to server" << i << std::endl;
     }
 
     // Close sockets
