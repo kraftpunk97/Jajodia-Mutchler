@@ -41,7 +41,7 @@ void sendPhaseMessage(int *server_sockets) {
     std::cout << "Partitioning complete\n\n\n\n";
 }
 
-void sendUpdateToServer(int *server_sockets, int server_id) {
+void sendUpdateToServer(int *server_sockets, int server_id)  {
     int* success_msg_buffer = new int;
     for (int i = 0; i < NUM_SERVERS; i++) {
         if (i == server_id)

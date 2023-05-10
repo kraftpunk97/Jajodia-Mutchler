@@ -24,7 +24,4 @@ Activate the servers before the controller.
 > ./control
 
 
-
----
-PS. If you take this course in the future and you get this exact same assignment, then I gotchu covered fam.
----
+<sub><sup>If you take this course in the future and you get this exact same assignment, then I gotchu covered fam.</sup></sub>
