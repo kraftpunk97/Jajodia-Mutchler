@@ -49,11 +49,6 @@ public:
             do {
                 bytes_read = m_controllerSocket.recv(controllerMsg, sizeof(int));
             } while(bytes_read==0);
-
-            /*
-            *  IF we get a None Start phase message, some "undefined-as-of-now" behaviour
-            *  If we get a UPDATE Message,
-            * */
             
             switch(*controllerMsg) {
                 case NONE: {
