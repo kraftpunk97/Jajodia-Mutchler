@@ -12,7 +12,8 @@
 
 auto phase_itr = phases.begin();
 
-struct RequestingServerDeets {
+// A handy little struct to keep track of the order of the toSockets and fromSockets
+struct RequestingServerDetails {
     int to_idx, from_idx; 
 };
 
@@ -172,12 +173,12 @@ public:
     }
 
     void none() {
-        RequestingServerDeets request_deets = listenForVoteReq();
-        sendVote(request_deets.to_idx);
-        listenForUpdate(request_deets.from_idx);
+        RequestingServerDetails request_details = listenForVoteReq();
+        sendVote(request_details.to_idx);
+        listenForUpdate(request_details.from_idx);
     }
 
-    RequestingServerDeets listenForVoteReq() {
+    RequestingServerDetails listenForVoteReq() {
         struct pollfd pfds[m_peers.size()];
 
         for(int i = 0; i < m_peers.size(); i++) {
@@ -187,7 +188,7 @@ public:
 
         int ret = 0;
         int recv_socket_idx = -1;
-        RequestingServerDeets request_deets = {-1, -1};
+        RequestingServerDetails request_deets = {-1, -1};
         int cycle=0;
         do {
             ret = poll(pfds, m_peers.size(), 100);

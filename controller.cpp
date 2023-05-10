@@ -9,6 +9,10 @@
 enum server_names {A, B, C, D, E, F, G, H};
 
 void sendPhaseMessage(int *server_sockets) {
+    /*
+     *  Send a message to all the servers signaling the next phase
+     *  and asking them to re-partition accordingly.
+     */
     int phase_start = START_PHASE;
     for (int i=0; i<NUM_SERVERS; i++) {
         if (send(server_sockets[i], &phase_start, sizeof(int), 0) < 0) {
@@ -16,7 +20,7 @@ void sendPhaseMessage(int *server_sockets) {
             close(server_sockets[i]);
             continue;
         }
-        std::cout << "Sent PHASE1 message to server " << (char)('A'+i) << std::endl;
+        std::cout << "Sent PHASE message to server " << (char)('A'+i) << std::endl;
     }
 
     // Controller now waits for confirmation from the servers...
@@ -42,6 +46,9 @@ void sendPhaseMessage(int *server_sockets) {
 }
 
 void sendUpdateToServer(int *server_sockets, int server_id)  {
+    /*
+     *  Send an UPDATE message to `server_id` and a NONE message to the remaining servers.
+     */
     int* success_msg_buffer = new int;
     for (int i = 0; i < NUM_SERVERS; i++) {
         if (i == server_id)
@@ -65,6 +72,9 @@ void sendUpdateToServer(int *server_sockets, int server_id)  {
 }
 
 void sendTerminate(int* server_sockets) {
+    /*
+     *  Party's over. Wrap up.
+     */
     for (int i = 0; i < NUM_SERVERS; i++) {
         int success_msg_buffer = END_PHASE;
         int bytes_rd = send(server_sockets[i],  &success_msg_buffer, sizeof(int), 0);
@@ -106,71 +116,47 @@ int main() {
         }
     }
 
-/*************************************************************/
+    /*************************************************************/
+    std::cout << "\n\n\n\nBegin PHASE1" << std::endl;
+
     // Send "PHASE1" message to server
     sendPhaseMessage(server_sockets);
-
-    // Send update to server A
     sendUpdateToServer(server_sockets, A);
-
-    // Send update to server B
     sendUpdateToServer(server_sockets, B);
 
-/*************************************************************/
+    /*************************************************************/
+    std::cout << "\n\n\n\nBegin PHASE2" << std::endl;
+
     // Send "PHASE2" message to server
     sendPhaseMessage(server_sockets);
-
-    // Send update to server A
     sendUpdateToServer(server_sockets, A);
-
-    // Send update to server B
     sendUpdateToServer(server_sockets, B);
-
-    // Send update to server E
     sendUpdateToServer(server_sockets, E);
-
-    // Send update to server F
     sendUpdateToServer(server_sockets, F);
 
-/*************************************************************/
-    // Send "PHASE3" message to server
+    /*************************************************************/
+    std::cout << "\n\n\n\nBegin PHASE3" << std::endl;
+
+    // Send "PHASE3" message to servers
     sendPhaseMessage(server_sockets);
-
-    // Send update to server A
     sendUpdateToServer(server_sockets, A);
-
-    // Send update to server A
     sendUpdateToServer(server_sockets, A);
-
-    // Send update to server B
     sendUpdateToServer(server_sockets, B);
-
-    // Send update to server D
     sendUpdateToServer(server_sockets, D);
-
-    // Send update to server E
     sendUpdateToServer(server_sockets, E);
-
-    // Send update to server F
     sendUpdateToServer(server_sockets, F);
-
-    // Send update to server H
+    sendUpdateToServer(server_sockets, H);
     sendUpdateToServer(server_sockets, H);
 
-    // Send update to server H
-    sendUpdateToServer(server_sockets, H);
+    /*************************************************************/
+    std::cout << "\n\n\n\nBegin PHASE4" << std::endl;
 
-/*************************************************************/
     // Send "PHASE4" message to server
     sendPhaseMessage(server_sockets);
-
-    // Send update to server B
     sendUpdateToServer(server_sockets, B);
-
-    // Send update to server D
     sendUpdateToServer(server_sockets, D);
 
-    //
+    // Send Terminate message
     sendTerminate(server_sockets);
 
     return 0;
