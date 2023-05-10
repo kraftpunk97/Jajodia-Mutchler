@@ -57,7 +57,7 @@ public:
                 }
                 break;
                 case START_PHASE: {
-                    std::cout << "\n\n\nRecieved PHASE\n";
+                    std::cout << "\n\n\nReceived PHASE\n";
                     phase();
                 }
                 break;
@@ -203,7 +203,6 @@ public:
                                 recv_socket_idx = ListenToReqbuf->server_id;
                                 request_deets.from_idx = j;
                                 request_deets.to_idx = recv_socket_idx;
-                                //std::cout << "Vote details: " << request_deets.from_idx << "\t" << request_deets.to_idx << std::endl;
                                 std::cout << "Received a vote request from " << recv_socket_idx << std::endl;
                                 break;
                             }
