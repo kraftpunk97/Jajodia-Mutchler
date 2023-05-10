@@ -1,5 +1,5 @@
 # Jajodia-Mutchler
-The final project for the "Advanced Operating Systems" course (CS6378), in which we implement the Jajodia-Mutchler algorithm.
+The final project for the "Advanced Operating Systems" course (CS6378) (taught by Ravi Prakash), in which we implement the Jajodia-Mutchler algorithm.
 
 ## How to compile
 
@@ -22,3 +22,9 @@ Activate the servers before the controller.
 ### Controller
 
 > ./control
+
+
+
+---
+PS. If you take this course in the future and you get this exact same assignment, then I gotchu covered fam.
+---

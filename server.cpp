@@ -41,7 +41,7 @@ public:
         SendInfo.DS = 0;
     }
 
-    void ControllerCommand(){
+    void controllerCommand(){
         int endphase_flag = 0;
         while (!endphase_flag) {
             int* controllerMsg = new int;
@@ -176,93 +176,10 @@ public:
         std::cout << "Sent the partitioning confirmation to the controller.\n";
     }
 
-    void close() {
-        /*
-         * Because we're fucking decent human beings...
-         * */
-        sleep(1);
-        for (ServerSocket peer_socket: m_peerFromSockets) {
-            if (peer_socket.is_valid()) {
-                try {
-                    peer_socket.close();
-                } catch (SocketException& e) {}
-            }
-        }
-        for (ClientSocket peer_socket: m_peerToSockets) {
-            if (peer_socket.is_valid()) {
-                try {
-                    peer_socket.close();
-                } catch (SocketException& e) {}
-            }
-        }
-        try {
-            m_controllerSocket.close();
-        } catch (SocketException& e) {}
-
-        try {
-            m_serverSocket.close();
-        } catch (SocketException& e) {}
-    }
-
     void none() {
         RequestingServerDeets request_deets = listenForVoteReq();
         sendVote(request_deets.to_idx);
         listenForUpdate(request_deets.from_idx);
-    }
-
-    void update() {
-        SetP.clear();
-        sendVoteReq();
-        getVotes();
-
-        int ret_dist = isDistinguished();
-        if(ret_dist) {
-            catch_up();
-            do_update();
-        }
-        else
-            abort();
-    }
-
-    void listenForUpdate(int requesting_socket) {
-        if (requesting_socket != -1) {
-            ObjectX *update_buffer = new ObjectX;
-            m_peerFromSockets[requesting_socket].recv(update_buffer, sizeof(ObjectX));
-            if (update_buffer->VN == -1)
-                std::cout << "Update was aborted" << std::endl;
-            else {
-                SendInfo = *update_buffer;
-                SendInfo.server_id = m_designation;
-                std::cout << "Someone did an update . Values updated to VN:" << SendInfo.VN << "\tRU:" << SendInfo.RU
-                          << "\tDS:" << SendInfo.DS << std::endl;
-            }
-        }
-        else {
-            std::cout << "No update received for this round\n";
-        }
-    }
-
-    void sendVoteReq() {
-        for (auto peer_idx: m_peers) {
-            m_peerToSockets[peer_idx].send(&SendInfo, sizeof(ObjectX));
-            std::cout << "Sent Vote Request to peers\n";
-        }
-    }
-
-    void getVotes() {
-        for (int i=0; i<m_peers.size(); i++) {
-            auto* recv_buffer = new ObjectX;
-            try {
-                m_peerFromSockets[i].recv(recv_buffer, sizeof(ObjectX));
-            } catch (SocketException&) { std::perror("getVotes"); }
-            std::cout << "Server:" << recv_buffer->server_id <<
-                         " VN:" << recv_buffer->VN <<
-                         " DS:" << recv_buffer->DS <<
-                         " RU:" << recv_buffer-> RU << std::endl;
-            //Store the votes in an array
-            SetP.push_back(*recv_buffer);
-        }
-        SetP.push_back(SendInfo);
     }
 
     RequestingServerDeets listenForVoteReq() {
@@ -311,6 +228,68 @@ public:
         }
     }
 
+    void listenForUpdate(int requesting_socket) {
+        if (requesting_socket != -1) {
+            ObjectX *update_buffer = new ObjectX;
+            m_peerFromSockets[requesting_socket].recv(update_buffer, sizeof(ObjectX));
+            if (update_buffer->VN == -1)
+                std::cout << "Update was aborted" << std::endl;
+            else {
+                SendInfo = *update_buffer;
+                SendInfo.server_id = m_designation;
+                std::cout << "Someone did an update . Values updated to VN:" << SendInfo.VN << "\tRU:" << SendInfo.RU
+                          << "\tDS:" << SendInfo.DS << std::endl;
+            }
+        }
+        else {
+            std::cout << "No update received for this round\n";
+        }
+    }
+
+    void reply() {
+        int reply_buf = 1;
+        m_controllerSocket.send(&reply_buf, sizeof(reply_buf));
+
+        std::cout << "Replied to controller" << std::endl;
+    }
+
+    void update() {
+        SetP.clear();
+        sendVoteReq();
+        getVotes();
+
+        int ret_dist = isDistinguished();
+        if(ret_dist) {
+            catchUp();
+            doUpdate();
+        }
+        else
+            abort();
+    }
+
+    void sendVoteReq() {
+        for (auto peer_idx: m_peers) {
+            m_peerToSockets[peer_idx].send(&SendInfo, sizeof(ObjectX));
+            std::cout << "Sent Vote Request to peers\n";
+        }
+    }
+
+    void getVotes() {
+        for (int i=0; i<m_peers.size(); i++) {
+            auto* recv_buffer = new ObjectX;
+            try {
+                m_peerFromSockets[i].recv(recv_buffer, sizeof(ObjectX));
+            } catch (SocketException&) { std::perror("getVotes"); }
+            std::cout << "Server:" << recv_buffer->server_id <<
+                         " VN:" << recv_buffer->VN <<
+                         " DS:" << recv_buffer->DS <<
+                         " RU:" << recv_buffer-> RU << std::endl;
+            //Store the votes in an array
+            SetP.push_back(*recv_buffer);
+        }
+        SetP.push_back(SendInfo);
+    }
+
     int isDistinguished() {
         int is_Distinguished_flag = 0;
         for(auto site: SetP) {
@@ -344,7 +323,7 @@ public:
         return is_Distinguished_flag;
     }
 
-    void catch_up() {
+    void catchUp() {
         if(SendInfo.VN < M) {
             std::cout << "Server has outdated version of X" << std::endl;
             SendInfo.VN = M;
@@ -353,7 +332,7 @@ public:
             std::cout << "Server has latest version of X" << std::endl;
     }
 
-    void do_update() {
+    void doUpdate() {
         SendInfo.VN = M+1;
         SendInfo.RU = SetP.size(); // Including the server that wants to perform the update.
         int min_server_id = SendInfo.server_id;
@@ -380,12 +359,34 @@ public:
         std::cout << "Aborted" << std::endl;
     }
 
-    void reply() {
-        int reply_buf = 1;
-        m_controllerSocket.send(&reply_buf, sizeof(reply_buf));
-        
-        std::cout << "Replied to controller" << std::endl;
+    void close() {
+        /*
+         * Because we're fucking decent human beings...
+         * */
+        sleep(1);
+        for (ServerSocket peer_socket: m_peerFromSockets) {
+            if (peer_socket.is_valid()) {
+                try {
+                    peer_socket.close();
+                } catch (SocketException& e) {}
+            }
+        }
+        for (ClientSocket peer_socket: m_peerToSockets) {
+            if (peer_socket.is_valid()) {
+                try {
+                    peer_socket.close();
+                } catch (SocketException& e) {}
+            }
+        }
+        try {
+            m_controllerSocket.close();
+        } catch (SocketException& e) {}
+
+        try {
+            m_serverSocket.close();
+        } catch (SocketException& e) {}
     }
+
 };
 
 
@@ -400,7 +401,7 @@ int main(int argc, char** argv) {
     port = std::atoi(argv[1]);
     designation = std::atoi(argv[2]);
     Server server(port, designation);
-    server.ControllerCommand();
+    server.controllerCommand();
     server.close();
     return 0;
 }
