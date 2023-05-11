@@ -24,4 +24,22 @@ Activate the servers before the controller.
 > ./control
 
 
+#### What goes in the `commons.h` file? 
+You must put in the external IP address in the `commons.h` file. You can use `ifconfig` to figure that out. When I run `ifconfig` on one of my servers, I get a response similar to what is shown below...
+
+```
+kgupta@ecelap261053 → ifconfig
+eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet <***.***.***.***>  netmask 255.255.240.0  broadcast <***.**.***.***>
+        inet6 <****::****:****:****:****>  prefixlen 64  scopeid 0x20<link>    
+        ether <**:**:**:**:**:**>  txqueuelen 1000  (Ethernet)
+        RX packets 17  bytes 2613 (2.6 KB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 10  bytes 796 (796.0 B)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+```
+
+That means that I use the `inet` value of `eth0` for the server IP address, and any free port for the port number.
+
 <sub><sup>If you take this course in the future and you get this exact same assignment, then I gotchu covered fam.</sup></sub>
